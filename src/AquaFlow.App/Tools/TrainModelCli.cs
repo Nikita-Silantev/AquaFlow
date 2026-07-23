@@ -37,7 +37,7 @@ internal static class TrainModelCli
                 $"  train/test: {split.Train.Count}/{split.Test.Count} " +
                 $"(seed={TrainTestSplitter.DefaultSeed}, воспроизводимо).");
 
-            var modelFilePath = ResolveModelFilePath();
+            var modelFilePath = RepoPaths.ModelFilePath();
             Console.WriteLine($"Обучаю MLP (10→32→16→3), веса сохранятся в: {modelFilePath}");
 
             var trainer = new ModelTrainer();
@@ -104,19 +104,4 @@ internal static class TrainModelCli
         Console.WriteLine($"  Предсказанные приёмники: {predictedText}");
     }
 
-    /// <summary>Находит корень репозитория (по AquaFlow.sln) независимо от рабочей директории процесса.</summary>
-    private static string ResolveModelFilePath()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "AquaFlow.sln")))
-        {
-            directory = directory.Parent;
-        }
-
-        var repoRoot = directory?.FullName
-            ?? throw new InvalidOperationException(
-                "Не удалось найти корень репозитория (AquaFlow.sln) для сохранения модели.");
-
-        return Path.Combine(repoRoot, "models", "water_mlp.bin");
-    }
 }

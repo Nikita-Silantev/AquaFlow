@@ -1,16 +1,25 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="AquaFlow.App.Views.SimulationView">
-    <Grid RowDefinitions="*,Auto" Margin="16">
+    <Grid RowDefinitions="*,Auto,Auto,Auto" Margin="16">
         <ScrollViewer Grid.Row="0">
             <Canvas x:Name="NetworkCanvas" Width="980" Height="600" Background="Transparent" />
         </ScrollViewer>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12" Margin="0,12,0,0" VerticalAlignment="Center">
+            <Button x:Name="PredictButton" Content="Расчёт (нейросеть)" Click="OnPredictClick" Padding="14,8" />
             <Button x:Name="RunRealButton" Content="Реальный прогон" Click="OnRunRealClick" Padding="14,8" />
-            <TextBlock x:Name="ResultText"
-                       VerticalAlignment="Center"
-                       Text="Выберите вход и клапаны, затем нажмите «Реальный прогон»." />
+        </StackPanel>
+
+        <TextBlock x:Name="PredictionText"
+                   Grid.Row="2"
+                   Margin="0,6,0,0"
+                   Foreground="Orange"
+                   Text="Нажмите «Расчёт», чтобы узнать предсказание нейросети." />
+
+        <StackPanel Grid.Row="3" Margin="0,6,0,0" Spacing="2">
+            <TextBlock x:Name="ResultText" Text="Выберите вход и клапаны, затем нажмите «Реальный прогон»." />
+            <TextBlock x:Name="AccuracyText" FontWeight="Bold" Text="Пока нет сравнений предсказаний с реальностью." />
         </StackPanel>
     </Grid>
 </UserControl>

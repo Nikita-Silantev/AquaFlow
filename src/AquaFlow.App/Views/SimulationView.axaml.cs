@@ -6,12 +6,14 @@ using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using AquaFlow.Core;
+using AquaFlow.Ml;
 
 namespace AquaFlow.App.Views;
 
 /// <summary>
-/// Вкладка «Симуляция»: канвас сети, выбор входа, переключение клапанов мышью
-/// и кнопка «Реальный прогон» с анимацией потока (M2).
+/// Вкладка «Симуляция»: канвас сети, выбор входа, переключение клапанов мышью,
+/// кнопки «Расчёт» (нейросеть, M5) и «Реальный прогон» (M2) с анимацией потока,
+/// сравнением предсказания с реальностью и живым счётчиком точности (M5).
 /// </summary>
 public partial class SimulationView : UserControl
 {
@@ -23,9 +25,13 @@ public partial class SimulationView : UserControl
     private static readonly IBrush ValveOpenBrush = Brushes.Orange;
     private static readonly IBrush ReceiverIdleBrush = Brushes.WhiteSmoke;
     private static readonly IBrush ReceiverReachedBrush = Brushes.DodgerBlue;
+    private static readonly IBrush BorderIdleBrush = Brushes.Black;
+    private static readonly IBrush BorderPredictedBrush = Brushes.DodgerBlue;
 
-    // Работа с симулятором — только через интерфейс IPipeSimulator (см. ТЗ, раздел 10).
+    // Работа с симулятором и моделью — только через интерфейсы (см. ТЗ, раздел 10).
     private readonly IPipeSimulator _simulator = new PipeSimulator();
+    private IWaterPredictor? _predictor;
+    private IRunRepository? _runRepository;
 
     private readonly Dictionary<string, Border> _nodeBorders = new();
     private readonly Dictionary<string, TextBlock> _nodeLabels = new();
@@ -45,11 +51,55 @@ public partial class SimulationView : UserControl
     private Source _selectedSource = Source.A;
     private bool _isRunning;
 
+    private Prediction? _lastPrediction;
+    private SimConfig? _lastPredictionConfig;
+    private int _totalCompared;
+    private int _correctCompared;
+
     public SimulationView()
     {
         InitializeComponent();
         BuildNetwork();
         RedrawState();
+    }
+
+    /// <summary>
+    /// Передаёт вкладке зависимости, собранные при старте приложения (M5): предиктор
+    /// (может быть null, если модель ещё не обучена) и репозиторий истории прогонов.
+    /// </summary>
+    public void Initialize(IWaterPredictor? predictor, IRunRepository? runRepository)
+    {
+        _predictor = predictor;
+        _runRepository = runRepository;
+
+        PredictButton.IsEnabled = _predictor is not null;
+        if (_predictor is null)
+        {
+            PredictionText.Text =
+                "Модель не обучена. Выполните: dotnet run --project src/AquaFlow.App -- --train-model";
+        }
+
+        _ = LoadAccuracySummaryAsync();
+    }
+
+    private async Task LoadAccuracySummaryAsync()
+    {
+        if (_runRepository is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var summary = await _runRepository.GetAccuracySummaryAsync();
+            _totalCompared = summary.Total;
+            _correctCompared = summary.Correct;
+            UpdateAccuracyText();
+        }
+        catch (Exception ex)
+        {
+            AccuracyText.Text = $"Не удалось загрузить счётчик точности из БД: {ex.Message}";
+        }
     }
 
     /// <summary>Создаёт визуальные элементы канваса один раз при инициализации.</summary>
@@ -89,7 +139,7 @@ public partial class SimulationView : UserControl
                 Width = 56,
                 Height = 56,
                 CornerRadius = new CornerRadius(28),
-                BorderBrush = Brushes.Black,
+                BorderBrush = BorderIdleBrush,
                 BorderThickness = new Thickness(1.5),
                 Background = Brushes.WhiteSmoke,
                 Child = label
@@ -131,7 +181,9 @@ public partial class SimulationView : UserControl
                 return;
         }
 
+        // Конфигурация изменилась — и результат реального прогона, и предсказание устарели.
         ResetRunVisuals();
+        ResetPredictionVisuals();
         RedrawState();
     }
 
@@ -165,7 +217,7 @@ public partial class SimulationView : UserControl
         }
     }
 
-    /// <summary>Сбрасывает результат предыдущего прогона (трубы и приёмники — в нейтральный цвет).</summary>
+    /// <summary>Сбрасывает результат предыдущего реального прогона (трубы и заливка приёмников).</summary>
     private void ResetRunVisuals()
     {
         foreach (var line in _pipeLines.Values)
@@ -180,6 +232,58 @@ public partial class SimulationView : UserControl
         }
 
         ResultText.Text = "Выберите вход и клапаны, затем нажмите «Реальный прогон».";
+    }
+
+    /// <summary>Сбрасывает предсказание нейросети (синюю рамку приёмников) и текст вероятностей.</summary>
+    private void ResetPredictionVisuals()
+    {
+        foreach (var node in NetworkLayout.Nodes.Where(n => n.Kind == NetworkLayout.NodeKind.Receiver))
+        {
+            var border = _nodeBorders[node.Id];
+            border.BorderBrush = BorderIdleBrush;
+            border.BorderThickness = new Thickness(1.5);
+        }
+
+        _lastPrediction = null;
+        _lastPredictionConfig = null;
+
+        PredictionText.Text = _predictor is null
+            ? "Модель не обучена. Выполните: dotnet run --project src/AquaFlow.App -- --train-model"
+            : "Нажмите «Расчёт», чтобы узнать предсказание нейросети.";
+    }
+
+    /// <summary>Кнопка «Расчёт»: вызывает IWaterPredictor.Predict и подсвечивает предсказанные приёмники рамкой.</summary>
+    private void OnPredictClick(object? sender, RoutedEventArgs e)
+    {
+        if (_predictor is null || _isRunning)
+        {
+            return;
+        }
+
+        ResetPredictionVisuals();
+
+        var config = SimConfig.Create(_selectedSource, _valveState);
+        var prediction = _predictor.Predict(config);
+
+        _lastPrediction = prediction;
+        _lastPredictionConfig = config;
+
+        foreach (var receiver in prediction.PredictedReceivers)
+        {
+            var border = _nodeBorders[receiver.ToString()];
+            border.BorderBrush = BorderPredictedBrush;
+            border.BorderThickness = new Thickness(4);
+        }
+
+        var probabilitiesText = string.Join(", ", prediction.Probabilities
+            .OrderBy(kv => kv.Key.ToString())
+            .Select(kv => $"{kv.Key}={kv.Value:P0}"));
+
+        var predictedText = prediction.PredictedReceivers.Count > 0
+            ? string.Join(", ", prediction.PredictedReceivers.Select(r => r.ToString()).OrderBy(s => s))
+            : "ничего";
+
+        PredictionText.Text = $"Нейросеть предсказывает: {predictedText} ({probabilitiesText})";
     }
 
     private async void OnRunRealClick(object? sender, RoutedEventArgs e)
@@ -214,21 +318,95 @@ public partial class SimulationView : UserControl
             _nodeBorders[receiver.ToString()].Background = ReceiverReachedBrush;
         }
 
-        ResultText.Text = result.ReachedReceivers.Count > 0
+        var reachedText = result.ReachedReceivers.Count > 0
             ? $"Вода дошла до: {string.Join(", ", result.ReachedReceivers.Select(r => r.ToString()).OrderBy(s => s))}"
             : "Вода никуда не дошла.";
+
+        // Главный вау-момент (ТЗ, раздел 8.2): если перед этим было сделано предсказание
+        // для той же конфигурации — сравниваем его с реальным результатом.
+        bool? wasCorrect = null;
+        if (_lastPrediction is not null && _lastPredictionConfig is not null && ConfigsEqual(_lastPredictionConfig, config))
+        {
+            wasCorrect = _lastPrediction.PredictedReceivers.SetEquals(result.ReachedReceivers);
+            _totalCompared++;
+            if (wasCorrect.Value)
+            {
+                _correctCompared++;
+            }
+
+            UpdateAccuracyText();
+            reachedText += wasCorrect.Value ? "  Нейросеть: совпало ✓" : "  Нейросеть: ошибка ✗";
+        }
+
+        ResultText.Text = reachedText;
+
+        await PersistRunAsync(config, result, wasCorrect);
 
         RunRealButton.IsEnabled = true;
         _isRunning = false;
 
-        await ShowResultWindowAsync(config, result);
+        await ShowResultWindowAsync(config, result, wasCorrect);
     }
 
-    /// <summary>Показывает окно итога прогона (вход, клапаны, достигнутые приёмники).</summary>
-    private async Task ShowResultWindowAsync(SimConfig config, SimulationResult result)
+    private async Task PersistRunAsync(SimConfig config, SimulationResult result, bool? wasCorrect)
+    {
+        if (_runRepository is null)
+        {
+            return;
+        }
+
+        var hasPrediction = wasCorrect is not null && _lastPrediction is not null;
+
+        var run = new RunRecord(
+            config.Source,
+            config.Valves,
+            "real",
+            hasPrediction ? _lastPrediction!.PredictedReceivers : null,
+            hasPrediction ? _lastPrediction!.Probabilities : null,
+            result.ReachedReceivers,
+            wasCorrect);
+
+        try
+        {
+            await _runRepository.InsertAsync(run);
+        }
+        catch (Exception ex)
+        {
+            ResultText.Text += $"  (не удалось записать прогон в БД: {ex.Message})";
+        }
+    }
+
+    private void UpdateAccuracyText()
+    {
+        AccuracyText.Text = _totalCompared == 0
+            ? "Пока нет сравнений предсказаний с реальностью."
+            : $"Модель угадала {_correctCompared} из {_totalCompared} прогонов " +
+              $"({(double)_correctCompared / _totalCompared:P1}).";
+    }
+
+    private static bool ConfigsEqual(SimConfig a, SimConfig b)
+    {
+        if (a.Source != b.Source || a.Valves.Count != b.Valves.Count)
+        {
+            return false;
+        }
+
+        foreach (var (junction, value) in a.Valves)
+        {
+            if (!b.Valves.TryGetValue(junction, out var otherValue) || otherValue != value)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>Показывает окно итога прогона (вход, клапаны, достигнутые приёмники, сравнение с предсказанием).</summary>
+    private async Task ShowResultWindowAsync(SimConfig config, SimulationResult result, bool? wasCorrect)
     {
         var owner = TopLevel.GetTopLevel(this) as Window;
-        var window = new RunResultWindow(config, result);
+        var window = new RunResultWindow(config, result, _lastPrediction, wasCorrect);
 
         if (owner is not null)
         {
