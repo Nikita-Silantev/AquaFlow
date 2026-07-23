@@ -8,9 +8,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- TorchSharp-cpu, Npgsql и Dapper/EF Core добавятся в M3/M4,
-         когда появится реальная генерация датасета и обучение. -->
+    <!-- TorchSharp-cpu добавится в M4, когда появится обучение MLP. -->
     <ProjectReference Include="..\AquaFlow.Core\AquaFlow.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql" Version="8.0.3" />
+    <PackageReference Include="Dapper" Version="2.1.35" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Единственный источник правды по схеме БД — db/migrations в корне репозитория.
+         Встраиваем файлы миграций в сборку, чтобы SchemaMigrator мог применить их
+         независимо от рабочей директории процесса. -->
+    <EmbeddedResource Include="../../db/migrations/*.sql">
+      <Link>Migrations/%(Filename)%(Extension)</Link>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>
