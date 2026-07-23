@@ -15,11 +15,13 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var connectionString = AquaFlowConnectionString.Resolve();
+            ISampleRepository sampleRepository = new PostgresSampleRepository(connectionString);
             IRunRepository runRepository = new PostgresRunRepository(connectionString);
+            IModelMetaRepository modelMetaRepository = new PostgresModelMetaRepository(connectionString);
 
             // Модель грузится один раз при старте (ТЗ, раздел 3.1). Если она ещё не
             // обучена (--train-model не выполнялся), приложение всё равно открывается —
-            // кнопка «Расчёт» просто будет недоступна (см. SimulationView.Initialize).
+            // кнопка «Расчёт» и метрики на тесте просто будут недоступны.
             IWaterPredictor? predictor = null;
             try
             {
@@ -30,7 +32,10 @@ public partial class App : Application
                 Console.Error.WriteLine($"Модель не загружена (можно обучить: --train-model): {ex.Message}");
             }
 
-            desktop.MainWindow = new MainWindow(predictor, runRepository);
+            var services = new AppServices(
+                predictor, sampleRepository, runRepository, modelMetaRepository, new LastPredictionState());
+
+            desktop.MainWindow = new MainWindow(services);
         }
 
         base.OnFrameworkInitializationCompleted();

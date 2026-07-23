@@ -21,3 +21,13 @@ public sealed record RunAccuracySummary(int Total, int Correct)
 {
     public double Accuracy => Total == 0 ? 0.0 : (double)Correct / Total;
 }
+
+/// <summary>Одна строка вкладки «История» (M6, ТЗ раздел 8.4).</summary>
+public sealed record RunHistoryEntry(
+    long Id,
+    DateTimeOffset CreatedAt,
+    Source Source,
+    IReadOnlyDictionary<Junction, int> Valves,
+    IReadOnlySet<Receiver>? PredictedReceivers,
+    IReadOnlySet<Receiver> ActualReceivers,
+    bool? WasCorrect);

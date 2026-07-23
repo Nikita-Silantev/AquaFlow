@@ -1,4 +1,5 @@
 using System.Text.Json;
+using AquaFlow.Core;
 using Dapper;
 using Npgsql;
 
@@ -70,5 +71,53 @@ public sealed class PostgresRunRepository : IRunRepository
     {
         public int Total { get; set; }
         public int Correct { get; set; }
+    }
+
+    public async Task<IReadOnlyList<RunHistoryEntry>> GetHistoryAsync(
+        int limit = 200,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        const string sql = """
+            SELECT id AS Id, created_at AS CreatedAt, source AS Source, valves::text AS Valves,
+                   predicted_receivers AS PredictedReceivers, actual_receivers AS ActualReceivers,
+                   was_correct AS WasCorrect
+            FROM runs
+            ORDER BY id DESC
+            LIMIT @Limit;
+            """;
+
+        var rows = await connection.QueryAsync<HistoryRow>(
+            new CommandDefinition(sql, new { Limit = limit }, cancellationToken: cancellationToken));
+
+        return rows.Select(FromHistoryRow).ToList();
+    }
+
+    /// <summary>Плоское представление строки истории для Dapper (обычный класс, см. пояснение выше).</summary>
+    private sealed class HistoryRow
+    {
+        public long Id { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+        public string Source { get; set; } = string.Empty;
+        public string Valves { get; set; } = string.Empty;
+        public string[]? PredictedReceivers { get; set; }
+        public string[] ActualReceivers { get; set; } = Array.Empty<string>();
+        public bool? WasCorrect { get; set; }
+    }
+
+    private static RunHistoryEntry FromHistoryRow(HistoryRow row)
+    {
+        var rawValves = JsonSerializer.Deserialize<Dictionary<string, int>>(row.Valves)
+            ?? throw new InvalidOperationException("Не удалось разобрать поле valves из БД.");
+        var valves = rawValves.ToDictionary(kv => Enum.Parse<Junction>(kv.Key), kv => kv.Value);
+
+        var predictedReceivers = row.PredictedReceivers?.Select(Enum.Parse<Receiver>).ToHashSet();
+        var actualReceivers = row.ActualReceivers.Select(Enum.Parse<Receiver>).ToHashSet();
+        var source = Enum.Parse<Source>(row.Source);
+
+        return new RunHistoryEntry(
+            row.Id, row.CreatedAt, source, valves, predictedReceivers, actualReceivers, row.WasCorrect);
     }
 }
