@@ -9,9 +9,9 @@ namespace AquaFlow.App;
 internal static class Program
 {
     /// <summary>
-    /// Обычный запуск открывает GUI. Флаг --generate-dataset вместо этого прогоняет
-    /// консольный сценарий M3 (миграции + генерация датасета + запись в Postgres)
-    /// и завершает процесс без показа окна.
+    /// Обычный запуск открывает GUI. Флаги --generate-dataset (M3) и --train-model (M4)
+    /// вместо этого прогоняют соответствующий консольный сценарий и завершают процесс
+    /// без показа окна.
     /// </summary>
     [STAThread]
     public static int Main(string[] args)
@@ -19,6 +19,11 @@ internal static class Program
         if (args.Contains("--generate-dataset"))
         {
             return DatasetCli.RunAsync().GetAwaiter().GetResult();
+        }
+
+        if (args.Contains("--train-model"))
+        {
+            return TrainModelCli.RunAsync().GetAwaiter().GetResult();
         }
 
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
