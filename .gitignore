@@ -1,0 +1,36 @@
+# Сборочные артефакты .NET
+bin/
+obj/
+out/
+
+# IDE
+.vs/
+.vscode/*
+!.vscode/extensions.json
+*.user
+*.suo
+
+# Rider
+.idea/
+
+# Нативные бинари libtorch (тянутся через NuGet restore, в репозиторий не идут)
+**/libtorch*/
+**/*.dylib
+**/*.dll.config
+
+# Данные Postgres (volume монтируется через docker-compose, не коммитим)
+pgdata/
+db/data/
+
+# Секреты и локальные настройки
+appsettings.Local.json
+appsettings.*.local.json
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Логи
+*.log

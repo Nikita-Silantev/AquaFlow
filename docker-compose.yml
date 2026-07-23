@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: aquaflow-postgres
+    environment:
+      POSTGRES_USER: aquaflow
+      POSTGRES_PASSWORD: aquaflow
+      POSTGRES_DB: aquaflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - aquaflow-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aquaflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  aquaflow-pgdata:

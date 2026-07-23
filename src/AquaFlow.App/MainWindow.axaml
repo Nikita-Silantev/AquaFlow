@@ -1,0 +1,18 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="AquaFlow.App.MainWindow"
+        Title="AquaFlow"
+        Width="1000" Height="700">
+    <!-- Три вкладки из ТЗ (раздел 8). Содержимое каждой появится в M2/M5/M6. -->
+    <TabControl>
+        <TabItem Header="Симуляция">
+            <TextBlock Margin="20" Text="Здесь появится канвас с сетью труб и кнопки прогона (M2, M5)." />
+        </TabItem>
+        <TabItem Header="Метрики">
+            <TextBlock Margin="20" Text="Здесь появится дашборд accuracy и матрицы ошибок (M6)." />
+        </TabItem>
+        <TabItem Header="История">
+            <TextBlock Margin="20" Text="Здесь появится таблица прошлых прогонов (M6)." />
+        </TabItem>
+    </TabControl>
+</Window>
