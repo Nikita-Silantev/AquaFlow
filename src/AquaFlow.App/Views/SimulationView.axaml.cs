@@ -131,7 +131,10 @@ public partial class SimulationView : UserControl
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
                 VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
                 FontWeight = FontWeight.Bold,
-                TextAlignment = TextAlignment.Center
+                TextAlignment = TextAlignment.Center,
+                // Явно чёрный: иначе текст наследует цвет из тёмной темы приложения
+                // и становится нечитаемым на светлом фоне узла.
+                Foreground = Brushes.Black
             };
 
             var border = new Border
