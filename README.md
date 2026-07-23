@@ -15,9 +15,9 @@ AquaFlow.sln
 └── models/             — файл весов обученной модели (water_mlp.bin)
 ```
 
-Статус: **M3 — датасет и Postgres готовы** (миграции схемы, генерация полного датасета
-из 384 конфигураций, воспроизводимое train/test-разбиение, запись в таблицу `samples`).
-Нейросеть ещё не реализована — по майлстоунам M4–M7 (см. ТЗ, раздел 9).
+Статус: **M4 — нейросеть готова** (MLP на TorchSharp за `IWaterPredictor`, обучение,
+сохранение весов в `models/water_mlp.bin`, метрики на отложенном тесте, запись в `model_meta`).
+Интеграция в UI («вау-момент») — в M5–M7 (см. ТЗ, раздел 9).
 
 ## Требования
 
@@ -45,6 +45,10 @@ dotnet run --project src/AquaFlow.App
 # Сгенерировать датасет: применяет миграции, генерирует 384 конфигурации,
 # перезаписывает таблицу samples. GUI не открывается.
 dotnet run --project src/AquaFlow.App -- --generate-dataset
+
+# Обучить MLP на датасете из Postgres, сохранить веса в models/water_mlp.bin,
+# записать метрики в model_meta. GUI не открывается.
+dotnet run --project src/AquaFlow.App -- --train-model
 ```
 
 ## База данных
