@@ -1,0 +1,14 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="AquaFlow.App.Views.RunResultWindow"
+        Title="Итог прогона"
+        Width="380" Height="240"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="20" Spacing="12">
+        <TextBlock x:Name="SourceText" FontWeight="Bold" FontSize="16" />
+        <TextBlock x:Name="ValvesText" TextWrapping="Wrap" />
+        <TextBlock x:Name="ReceiversText" FontWeight="Bold" Foreground="DodgerBlue" TextWrapping="Wrap" />
+        <Button Content="Закрыть" HorizontalAlignment="Right" Click="OnCloseClick" Padding="14,6" />
+    </StackPanel>
+</Window>
