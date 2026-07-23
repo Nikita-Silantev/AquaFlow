@@ -7,7 +7,7 @@
     <!-- Три вкладки из ТЗ (раздел 8). Метрики и История появятся в M6. -->
     <TabControl>
         <TabItem Header="Симуляция">
-            <views:SimulationView />
+            <views:SimulationView x:Name="SimulationTab" />
         </TabItem>
         <TabItem Header="Метрики">
             <TextBlock Margin="20" Text="Здесь появится дашборд accuracy и матрицы ошибок (M6)." />
