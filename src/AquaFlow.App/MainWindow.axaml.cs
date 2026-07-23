@@ -1,18 +1,24 @@
 using Avalonia.Controls;
-using AquaFlow.Ml;
+using AquaFlow.App.Tools;
 
 namespace AquaFlow.App;
 
 public partial class MainWindow : Window
 {
-    /// <summary>Нужен загрузчику XAML/дизайнеру; зависимости в этом случае не передаются.</summary>
-    public MainWindow() : this(null, null)
+    /// <summary>Нужен загрузчику XAML/дизайнеру — без зависимостей вкладки останутся пустыми.</summary>
+    public MainWindow() : this(null)
     {
     }
 
-    public MainWindow(IWaterPredictor? predictor, IRunRepository? runRepository)
+    public MainWindow(AppServices? services)
     {
         InitializeComponent();
-        SimulationTab.Initialize(predictor, runRepository);
+
+        if (services is not null)
+        {
+            SimulationTab.Initialize(services);
+            MetricsTab.Initialize(services);
+            HistoryTab.Initialize(services);
+        }
     }
 }

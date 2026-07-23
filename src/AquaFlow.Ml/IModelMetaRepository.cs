@@ -8,4 +8,7 @@ public interface IModelMetaRepository
         double subsetAccuracy,
         string filePath,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Последняя обученная модель (для вкладки «Метрики», M6) или null, если обучения ещё не было.</summary>
+    Task<ModelMetaInfo?> GetLatestAsync(CancellationToken cancellationToken = default);
 }

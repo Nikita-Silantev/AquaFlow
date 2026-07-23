@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="AquaFlow.App.Views.HistoryView">
+    <Grid RowDefinitions="Auto,Auto,*" Margin="16">
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="12">
+            <Button x:Name="RefreshButton" Content="Обновить" Click="OnRefreshClick" Padding="14,8" />
+            <TextBlock x:Name="StatusText" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <Grid Grid.Row="1" Margin="0,12,0,4" ColumnDefinitions="160,60,240,140,140,80">
+            <TextBlock Grid.Column="0" Text="Время" FontWeight="Bold" />
+            <TextBlock Grid.Column="1" Text="Вход" FontWeight="Bold" />
+            <TextBlock Grid.Column="2" Text="Клапаны" FontWeight="Bold" />
+            <TextBlock Grid.Column="3" Text="Предсказано" FontWeight="Bold" />
+            <TextBlock Grid.Column="4" Text="Реально" FontWeight="Bold" />
+            <TextBlock Grid.Column="5" Text="Совпало" FontWeight="Bold" />
+        </Grid>
+
+        <ScrollViewer Grid.Row="2">
+            <StackPanel x:Name="HistoryRows" Spacing="2" />
+        </ScrollViewer>
+    </Grid>
+</UserControl>

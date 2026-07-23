@@ -4,16 +4,16 @@
         x:Class="AquaFlow.App.MainWindow"
         Title="AquaFlow"
         Width="1080" Height="780">
-    <!-- Три вкладки из ТЗ (раздел 8). Метрики и История появятся в M6. -->
+    <!-- Три вкладки из ТЗ (раздел 8). -->
     <TabControl>
         <TabItem Header="Симуляция">
             <views:SimulationView x:Name="SimulationTab" />
         </TabItem>
         <TabItem Header="Метрики">
-            <TextBlock Margin="20" Text="Здесь появится дашборд accuracy и матрицы ошибок (M6)." />
+            <views:MetricsView x:Name="MetricsTab" />
         </TabItem>
         <TabItem Header="История">
-            <TextBlock Margin="20" Text="Здесь появится таблица прошлых прогонов (M6)." />
+            <views:HistoryView x:Name="HistoryTab" />
         </TabItem>
     </TabControl>
 </Window>

@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using AquaFlow.App.Tools;
 using AquaFlow.Core;
 using AquaFlow.Ml;
 
@@ -32,6 +33,7 @@ public partial class SimulationView : UserControl
     private readonly IPipeSimulator _simulator = new PipeSimulator();
     private IWaterPredictor? _predictor;
     private IRunRepository? _runRepository;
+    private LastPredictionState? _lastPredictionState;
 
     private readonly Dictionary<string, Border> _nodeBorders = new();
     private readonly Dictionary<string, TextBlock> _nodeLabels = new();
@@ -63,14 +65,12 @@ public partial class SimulationView : UserControl
         RedrawState();
     }
 
-    /// <summary>
-    /// Передаёт вкладке зависимости, собранные при старте приложения (M5): предиктор
-    /// (может быть null, если модель ещё не обучена) и репозиторий истории прогонов.
-    /// </summary>
-    public void Initialize(IWaterPredictor? predictor, IRunRepository? runRepository)
+    /// <summary>Передаёт вкладке зависимости, собранные при старте приложения (M5/M6).</summary>
+    public void Initialize(AppServices services)
     {
-        _predictor = predictor;
-        _runRepository = runRepository;
+        _predictor = services.Predictor;
+        _runRepository = services.RunRepository;
+        _lastPredictionState = services.LastPredictionState;
 
         PredictButton.IsEnabled = _predictor is not null;
         if (_predictor is null)
@@ -270,6 +270,7 @@ public partial class SimulationView : UserControl
 
         _lastPrediction = prediction;
         _lastPredictionConfig = config;
+        _lastPredictionState?.Update(config, prediction);
 
         foreach (var receiver in prediction.PredictedReceivers)
         {

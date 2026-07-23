@@ -1,0 +1,78 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="AquaFlow.App.Views.MetricsView">
+    <ScrollViewer Margin="16">
+        <StackPanel Spacing="16">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button x:Name="RefreshButton" Content="Обновить" Click="OnRefreshClick" Padding="14,8" />
+                <TextBlock x:Name="StatusText" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Модель" FontWeight="Bold" FontSize="16" />
+                <TextBlock x:Name="ModelMetaText" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Качество на отложенном тесте" FontWeight="Bold" FontSize="16" />
+                <TextBlock x:Name="SubsetAccuracyText" />
+                <TextBlock x:Name="PerLabelAccuracyText" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Матрица ошибок (по отложенному тесту)" FontWeight="Bold" FontSize="16" />
+                <Grid ColumnDefinitions="80,60,60,60,60" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4,0,0">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Приёмник" FontWeight="Bold" />
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="TP" FontWeight="Bold" />
+                    <TextBlock Grid.Row="0" Grid.Column="2" Text="FP" FontWeight="Bold" />
+                    <TextBlock Grid.Row="0" Grid.Column="3" Text="FN" FontWeight="Bold" />
+                    <TextBlock Grid.Row="0" Grid.Column="4" Text="TN" FontWeight="Bold" />
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="X" />
+                    <TextBlock x:Name="XTpText" Grid.Row="1" Grid.Column="1" />
+                    <TextBlock x:Name="XFpText" Grid.Row="1" Grid.Column="2" />
+                    <TextBlock x:Name="XFnText" Grid.Row="1" Grid.Column="3" />
+                    <TextBlock x:Name="XTnText" Grid.Row="1" Grid.Column="4" />
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Y" />
+                    <TextBlock x:Name="YTpText" Grid.Row="2" Grid.Column="1" />
+                    <TextBlock x:Name="YFpText" Grid.Row="2" Grid.Column="2" />
+                    <TextBlock x:Name="YFnText" Grid.Row="2" Grid.Column="3" />
+                    <TextBlock x:Name="YTnText" Grid.Row="2" Grid.Column="4" />
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Z" />
+                    <TextBlock x:Name="ZTpText" Grid.Row="3" Grid.Column="1" />
+                    <TextBlock x:Name="ZFpText" Grid.Row="3" Grid.Column="2" />
+                    <TextBlock x:Name="ZFnText" Grid.Row="3" Grid.Column="3" />
+                    <TextBlock x:Name="ZTnText" Grid.Row="3" Grid.Column="4" />
+                </Grid>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Точность в приложении (предсказание vs реальность)" FontWeight="Bold" FontSize="16" />
+                <TextBlock x:Name="RunsAccuracyText" />
+            </StackPanel>
+
+            <StackPanel Spacing="6">
+                <TextBlock Text="Уверенность для последней конфигурации" FontWeight="Bold" FontSize="16" />
+                <TextBlock x:Name="LastConfigText" TextWrapping="Wrap" />
+
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="X" Width="16" />
+                    <ProgressBar x:Name="XConfidenceBar" Minimum="0" Maximum="100" Width="300" Height="16" />
+                    <TextBlock x:Name="XConfidenceValueText" Width="50" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="Y" Width="16" />
+                    <ProgressBar x:Name="YConfidenceBar" Minimum="0" Maximum="100" Width="300" Height="16" />
+                    <TextBlock x:Name="YConfidenceValueText" Width="50" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="Z" Width="16" />
+                    <ProgressBar x:Name="ZConfidenceBar" Minimum="0" Maximum="100" Width="300" Height="16" />
+                    <TextBlock x:Name="ZConfidenceValueText" Width="50" />
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

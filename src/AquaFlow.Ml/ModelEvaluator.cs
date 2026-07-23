@@ -15,11 +15,55 @@ public sealed record EvaluationMetrics(
 /// <summary>Считает метрики (ТЗ, раздел 6.4) для модели на заданной выборке.</summary>
 public static class ModelEvaluator
 {
+    /// <summary>
+    /// Используется во время обучения (M4, <see cref="ModelTrainer"/>) — работает напрямую
+    /// с моделью, которая ещё не сохранена на диск.
+    /// </summary>
     public static EvaluationMetrics Evaluate(WaterMlpModel model, IReadOnlyList<Sample> samples)
     {
         model.eval();
         using var _ = no_grad();
 
+        return EvaluateCore(samples, sample =>
+        {
+            var features = FeatureEncoder.EncodeFeatures(sample);
+            var input = tensor(features).reshape(1, FeatureEncoder.FeatureCount);
+            var output = model.forward(input).reshape(FeatureEncoder.LabelCount);
+            var probs = output.data<float>().ToArray();
+
+            var predicted = new HashSet<Receiver>();
+            var receivers = FeatureEncoder.ReceiversInOrder;
+            for (var i = 0; i < receivers.Count; i++)
+            {
+                if (probs[i] >= 0.5f)
+                {
+                    predicted.Add(receivers[i]);
+                }
+            }
+
+            return predicted;
+        });
+    }
+
+    /// <summary>
+    /// Используется вкладкой «Метрики» (M6) — работает только через <see cref="IWaterPredictor"/>,
+    /// не трогая внутренности модели напрямую (ТЗ, раздел 10: работа с моделью — только через интерфейс).
+    /// </summary>
+    public static EvaluationMetrics Evaluate(IWaterPredictor predictor, IReadOnlyList<Sample> samples)
+    {
+        ArgumentNullException.ThrowIfNull(predictor);
+
+        return EvaluateCore(samples, sample =>
+        {
+            var config = SimConfig.Create(sample.Source, sample.Valves);
+            return predictor.Predict(config).PredictedReceivers;
+        });
+    }
+
+    private static EvaluationMetrics EvaluateCore(
+        IReadOnlyList<Sample> samples,
+        Func<Sample, IReadOnlySet<Receiver>> predict)
+    {
         var receivers = FeatureEncoder.ReceiversInOrder;
         var truePositive = new Dictionary<Receiver, int>();
         var falsePositive = new Dictionary<Receiver, int>();
@@ -37,16 +81,12 @@ public static class ModelEvaluator
 
         foreach (var sample in samples)
         {
-            var features = FeatureEncoder.EncodeFeatures(sample);
-            var input = tensor(features).reshape(1, FeatureEncoder.FeatureCount);
-            var output = model.forward(input).reshape(FeatureEncoder.LabelCount);
-            var probs = output.data<float>().ToArray();
+            var predictedReceivers = predict(sample);
 
             var allCorrect = true;
-            for (var i = 0; i < receivers.Count; i++)
+            foreach (var receiver in receivers)
             {
-                var receiver = receivers[i];
-                var predicted = probs[i] >= 0.5f;
+                var predicted = predictedReceivers.Contains(receiver);
                 var actual = sample.ReachedReceivers.Contains(receiver);
 
                 if (predicted && actual) truePositive[receiver]++;
