@@ -7,7 +7,9 @@ services:
       POSTGRES_PASSWORD: aquaflow
       POSTGRES_DB: aquaflow
     ports:
-      - "5432:5432"
+      # Хост:5433 -> контейнер:5432. Порт 5432 на хосте часто занят другим локальным
+      # Postgres (Postgres.app, Homebrew и т.п.) — используем 5433 снаружи, чтобы не конфликтовать.
+      - "5433:5432"
     volumes:
       - aquaflow-pgdata:/var/lib/postgresql/data
     healthcheck:
